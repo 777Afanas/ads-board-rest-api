@@ -4,6 +4,8 @@ import swaggerUi from "swagger-ui-express";
 import cookieParser from "cookie-parser";
 
 import { generateOpenApiDocument } from "./src/openapi.ts";
+// ДОДАНО ТУТ: Імпортуємо роутер
+import authRouter from "./src/routes/auth.routes.js"; 
 
 const app = express();
 
@@ -11,6 +13,9 @@ app.use(express.json());
 app.use(cookieParser());
 const openApiDocument = generateOpenApiDocument();
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
+
+// ДОДАНО ТУТ: Підключаємо роутер авторизації
+app.use("/auth", authRouter);
 
 // 404 Not Found handler - must be after all routes
 app.use((_req: Request, res: Response) => {
