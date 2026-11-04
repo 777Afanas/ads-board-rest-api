@@ -3,9 +3,11 @@ import type { NextFunction, Request, Response } from "express";
 import swaggerUi from "swagger-ui-express";
 import cookieParser from "cookie-parser";
 
-import { generateOpenApiDocument } from "./src/openapi.ts";
-// ДОДАНО ТУТ: Імпортуємо роутер
+// для ES-модулів імпорт має бути з розширенням .js
+import { generateOpenApiDocument } from "./src/openapi.js"; 
 import authRouter from "./src/routes/auth.routes.js"; 
+// Імпортуємо роутер оголошень
+import announcementsRouter from "./src/routes/announcements.routes.js"; 
 
 const app = express();
 
@@ -14,8 +16,9 @@ app.use(cookieParser());
 const openApiDocument = generateOpenApiDocument();
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(openApiDocument));
 
-// ДОДАНО ТУТ: Підключаємо роутер авторизації
 app.use("/auth", authRouter);
+// Підключаємо роутер оголошень за базовою адресою /announcements
+app.use("/announcements", announcementsRouter);
 
 // 404 Not Found handler - must be after all routes
 app.use((_req: Request, res: Response) => {
