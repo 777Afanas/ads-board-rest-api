@@ -3,42 +3,54 @@ import { publicUserSchema } from "./auth.validator.js";
 
 export const CATEGORIES = ["sale", "service", "job", "other"] as const;
 
-const announcementFields = {
-  title: z.string().trim().min(5).max(50).openapi({ example: "Selling a bicycle" }),
-  description: z.string().trim().min(10).openapi({ example: "Mountain bike, 21 speeds" }),
-  price: z.number().positive().openapi({ example: 8000 }),
-  category: z.enum(CATEGORIES).openapi({ example: "sale" }),
-};
-
 export const createAnnouncementSchema = z
-  .object(announcementFields)
+  .object({
+    title: z.string().trim().min(3).max(100).openapi({ example: "Selling a bicycle" }),
+    description: z.string().trim().min(10).max(1000).openapi({ example: "Mountain bike, 21 speeds" }),
+    price: z.number().positive().openapi({ example: 8000 }),
+    category: z.string().min(1).openapi({ example: "sale" }),
+  })
   .openapi("CreateAnnouncementRequest");
 
-export const updateAnnouncementSchema = z
-  .object(announcementFields)
+// Забороняє порожній об'єкт {} при оновленні (PATCH)
+export const updateAnnouncementSchema = createAnnouncementSchema
   .partial()
   .refine((data) => Object.keys(data).length > 0, {
-    message: "At least one field must be provided",
+    message: "Body must contain at least one field to update",
   })
   .openapi("UpdateAnnouncementRequest");
 
 export const announcementIdSchema = z.object({
-  id: z.coerce.number().int().positive().openapi({ example: 1 }),
+  id: z
+    .string()
+    .regex(/^\d+$/, "ID must be a positive integer")
+    .transform(Number)
+    .openapi({ example: 1 as any }),
 });
 
 export const listAnnouncementsQuerySchema = z.object({
+  page: z
+    .string()
+    .regex(/^\d+$/)
+    .default("1")
+    .transform(Number),    
   search: z.string().trim().optional().openapi({ description: "Case-insensitive search by title" }),
-  sort: z.enum(["newest", "oldest"]).default("newest"),
-  page: z.coerce.number().int().positive().default(1),
+  sort: z.enum(["newest", "oldest"]).optional().default("newest"),
 });
+
+// Аліаси для зворотної сумісності із завданням
+export const announcementParamsSchema = announcementIdSchema;
+export const announcementQuerySchema = listAnnouncementsQuerySchema;
 
 export const announcementSchema = z
   .object({
     id: z.number().int().openapi({ example: 6 }),
-    ...announcementFields,
-    // ВИПРАВЛЕНО: z.string().datetime() замість z.iso.datetime()
-    createdAt: z.string().datetime().openapi({ example: "2025-01-11T10:00:00.000Z" }),
-    updatedAt: z.string().datetime().openapi({ example: "2025-01-11T10:00:00.000Z" }),
+    title: z.string().min(3).max(100),
+    description: z.string().min(10).max(1000),
+    price: z.number().positive(),
+    category: z.string().min(1),
+    createdAt: z.iso.datetime().openapi({ example: "2025-01-11T10:00:00.000Z" }),
+    updatedAt: z.iso.datetime().openapi({ example: "2025-01-11T10:00:00.000Z" }),
     user: publicUserSchema,
   })
   .openapi("Announcement");
